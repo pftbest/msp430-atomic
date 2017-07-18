@@ -1,0 +1,6 @@
+[package]
+name = "msp430-atomic"
+version = "0.1.0"
+authors = ["Vadzim Dambrouski <pftbest@gmail.com>"]
+
+[dependencies]
