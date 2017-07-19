@@ -85,11 +85,11 @@
 //! ```
 
 #![no_std]
-#![feature(asm)]
 #![feature(const_fn)]
 
 use core::cell::UnsafeCell;
 use core::fmt;
+use core::ptr;
 
 /// A boolean type which can be safely shared between threads.
 ///
@@ -729,43 +729,37 @@ macro_rules! atomic_int {
         impl AtomicOperations for $int_type {
             #[inline]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
-                asm!(concat!("mov", $asm_suffix, " $1, $0")
-                    :: "m"(dst), "r"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, val)
             }
+
             #[inline]
             unsafe fn atomic_load(dst: *const Self) -> Self {
-                let out;
-                asm!(concat!("mov", $asm_suffix, " $1, $0")
-                    : "=r"(out) : "m"(dst) : "memory" : "volatile");
-                out
+                ptr::read_volatile(dst)
             }
+
             #[inline]
             unsafe fn atomic_add(dst: *mut Self, val: Self) {
-                asm!(concat!("add", $asm_suffix, " $1, $0")
-                    :: "m"(dst), "r"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, ptr::read_volatile(dst) + val)
             }
+
             #[inline]
             unsafe fn atomic_sub(dst: *mut Self, val: Self) {
-                asm!(concat!("sub", $asm_suffix, " $1, $0")
-                    :: "m"(dst), "r"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, ptr::read_volatile(dst) - val)
             }
+
             #[inline]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
-                //let mut gg = core::ptr::read_volatile(dst);
-                //gg = gg & val;
-                //core::ptr::write_volatile(dst, gg);
-                asm!(concat!("and", $asm_suffix, " $1, $0")
-                    :: "m"(dst), "i"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, ptr::read_volatile(dst) & val)
             }
+
             #[inline]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
-                asm!(concat!("or", $asm_suffix, " $1, $0")
-                    :: "m"(dst), "r"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, ptr::read_volatile(dst) | val)
             }
+
             #[inline]
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
-                asm!(concat!("xor", $asm_suffix, " $1, $0")
-                    :: "p"(dst), "i"(val) : "memory" : "volatile");
+                ptr::write_volatile(dst, ptr::read_volatile(dst) ^ val)
             }
         }
     }
