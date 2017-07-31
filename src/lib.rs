@@ -87,6 +87,7 @@
 #![no_std]
 #![feature(asm)]
 #![feature(const_fn)]
+#![cfg_attr(not(target_arch = "msp430"), feature(core_intrinsics))]
 
 use core::cell::UnsafeCell;
 use core::fmt;
@@ -726,6 +727,7 @@ macro_rules! atomic_int {
             }
         }
 
+        #[cfg(target_arch = "msp430")]
         impl AtomicOperations for $int_type {
             #[inline]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
@@ -769,6 +771,44 @@ macro_rules! atomic_int {
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
                 asm!(concat!("xor", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
+            }
+        }
+
+        #[cfg(not(target_arch = "msp430"))]
+        impl AtomicOperations for $int_type {
+            #[inline]
+            unsafe fn atomic_store(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_store(dst, val);
+            }
+
+            #[inline]
+            unsafe fn atomic_load(dst: *const Self) -> Self {
+                ::core::intrinsics::atomic_load(dst)
+            }
+
+            #[inline]
+            unsafe fn atomic_add(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_xadd(dst, val);
+            }
+
+            #[inline]
+            unsafe fn atomic_sub(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_xsub(dst, val);
+            }
+
+            #[inline]
+            unsafe fn atomic_and(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_and(dst, val);
+            }
+
+            #[inline]
+            unsafe fn atomic_or(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_or(dst, val);
+            }
+
+            #[inline]
+            unsafe fn atomic_xor(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_xor(dst, val);
             }
         }
     }
