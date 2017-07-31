@@ -1,6 +1,7 @@
 // Copyright 2012-2014 The Rust Project Developers. See the COPYRIGHT
-// file at the top-level directory of this distribution and at
-// http://rust-lang.org/COPYRIGHT.
+// file at http://rust-lang.org/COPYRIGHT.
+//
+// Copyright 2017 Vadzim Dambrouski, initial port to MSP430.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -23,23 +24,17 @@
 //! [`AtomicIsize`]: struct.AtomicIsize.html
 //! [`AtomicUsize`]: struct.AtomicUsize.html
 //!
-//! Each method takes an [`Ordering`] which represents the strength of
-//! the memory barrier for that operation. These orderings are the
-//! same as [LLVM atomic orderings][1]. For more information see the [nomicon][2].
+//! MSP430 note: All atomic operations in this crate have `SeqCst`
+//! memory [ordering].
 //!
-//! [`Ordering`]: enum.Ordering.html
-//!
-//! [1]: http://llvm.org/docs/LangRef.html#memory-model-for-concurrent-operations
-//! [2]: ../../../nomicon/atomics.html
+//! [ordering]: https://doc.rust-lang.org/std/sync/atomic/enum.Ordering.html
 //!
 //! Atomic variables are safe to share between threads (they implement [`Sync`])
 //! but they do not themselves provide the mechanism for sharing and follow the
-//! [threading model](../../../std/thread/index.html#the-threading-model) of rust.
-//! The most common way to share an atomic variable is to put it into an [`Arc`][arc] (an
-//! atomically-reference-counted shared pointer).
+//! [threading model](https://doc.rust-lang.org/std/thread/#the-threading-model)
+//! of rust.
 //!
-//! [`Sync`]: ../../marker/trait.Sync.html
-//! [arc]: ../../../std/sync/struct.Arc.html
+//! [`Sync`]: https://doc.rust-lang.org/std/marker/trait.Sync.html
 //!
 //! Most atomic types may be stored in static variables, initialized using
 //! the provided static initializers like [`ATOMIC_BOOL_INIT`]. Atomic statics
@@ -52,36 +47,24 @@
 //! A simple spinlock:
 //!
 //! ```
-//! use std::sync::Arc;
-//! use std::sync::atomic::{AtomicUsize, Ordering};
+//! use msp430_atomic::{AtomicUsize, ATOMIC_USIZE_INIT};
 //! use std::thread;
 //!
-//! fn main() {
-//!     let spinlock = Arc::new(AtomicUsize::new(1));
+//! // Initialize SPINLOCK to 0
+//! static SPINLOCK: AtomicUsize = ATOMIC_USIZE_INIT;
 //!
-//!     let spinlock_clone = spinlock.clone();
+//! fn main() {
 //!     let thread = thread::spawn(move|| {
-//!         spinlock_clone.store(0, Ordering::SeqCst);
+//!         SPINLOCK.store(1);
 //!     });
 //!
 //!     // Wait for the other thread to release the lock
-//!     while spinlock.load(Ordering::SeqCst) != 0 {}
+//!     while SPINLOCK.load() == 0 {}
 //!
 //!     if let Err(panic) = thread.join() {
 //!         println!("Thread had an error: {:?}", panic);
 //!     }
 //! }
-//! ```
-//!
-//! Keep a global count of live threads:
-//!
-//! ```
-//! use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-//!
-//! static GLOBAL_THREAD_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
-//!
-//! let old_thread_count = GLOBAL_THREAD_COUNT.add(1, Ordering::SeqCst);
-//! println!("live threads: {}", old_thread_count + 1);
 //! ```
 
 #![no_std]
@@ -137,7 +120,7 @@ impl AtomicBool {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::AtomicBool;
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let atomic_true  = AtomicBool::new(true);
     /// let atomic_false = AtomicBool::new(false);
@@ -157,12 +140,12 @@ impl AtomicBool {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let mut some_bool = AtomicBool::new(true);
     /// assert_eq!(*some_bool.get_mut(), true);
     /// *some_bool.get_mut() = false;
-    /// assert_eq!(some_bool.load(Ordering::SeqCst), false);
+    /// assert_eq!(some_bool.load(), false);
     /// ```
     #[inline]
     pub fn get_mut(&mut self) -> &mut bool {
@@ -177,7 +160,7 @@ impl AtomicBool {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::AtomicBool;
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let some_bool = AtomicBool::new(true);
     /// assert_eq!(some_bool.into_inner(), true);
@@ -189,25 +172,14 @@ impl AtomicBool {
 
     /// Loads a value from the bool.
     ///
-    /// `load` takes an [`Ordering`] argument which describes the memory ordering
-    /// of this operation.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `order` is [`Release`] or [`AcqRel`].
-    ///
-    /// [`Ordering`]: enum.Ordering.html
-    /// [`Release`]: enum.Ordering.html#variant.Release
-    /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let some_bool = AtomicBool::new(true);
     ///
-    /// assert_eq!(some_bool.load(Ordering::Relaxed), true);
+    /// assert_eq!(some_bool.load(), true);
     /// ```
     #[inline]
     pub fn load(&self) -> bool {
@@ -216,28 +188,16 @@ impl AtomicBool {
 
     /// Stores a value into the bool.
     ///
-    /// `store` takes an [`Ordering`] argument which describes the memory ordering
-    /// of this operation.
-    ///
-    /// [`Ordering`]: enum.Ordering.html
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let some_bool = AtomicBool::new(true);
     ///
-    /// some_bool.store(false, Ordering::Relaxed);
-    /// assert_eq!(some_bool.load(Ordering::Relaxed), false);
+    /// some_bool.store(false);
+    /// assert_eq!(some_bool.load(), false);
     /// ```
-    ///
-    /// # Panics
-    ///
-    /// Panics if `order` is [`Acquire`] or [`AcqRel`].
-    ///
-    /// [`Acquire`]: enum.Ordering.html#variant.Acquire
-    /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
     #[inline]
     pub fn store(&self, val: bool) {
         unsafe {
@@ -250,24 +210,22 @@ impl AtomicBool {
     /// Performs a logical "and" operation on the current value and the argument `val`, and sets
     /// the new value to the result.
     ///
-    /// Returns the previous value.
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.and(false, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.and(false);
+    /// assert_eq!(foo.load(), false);
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.and(true, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.and(true);
+    /// assert_eq!(foo.load(), true);
     ///
     /// let foo = AtomicBool::new(false);
-    /// assert_eq!(foo.and(false, Ordering::SeqCst), false);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.and(false);
+    /// assert_eq!(foo.load(), false);
     /// ```
     #[inline]
     pub fn and(&self, val: bool) {
@@ -279,25 +237,23 @@ impl AtomicBool {
     /// Performs a logical "nand" operation on the current value and the argument `val`, and sets
     /// the new value to the result.
     ///
-    /// Returns the previous value.
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.nand(false, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.nand(false);
+    /// assert_eq!(foo.load(), true);
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.nand(true, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst) as usize, 0);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.nand(true);
+    /// assert_eq!(foo.load() as usize, 0);
+    /// assert_eq!(foo.load(), false);
     ///
     /// let foo = AtomicBool::new(false);
-    /// assert_eq!(foo.nand(false, Ordering::SeqCst), false);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.nand(false);
+    /// assert_eq!(foo.load(), true);
     /// ```
     #[inline]
     pub fn nand(&self, val: bool) {
@@ -321,24 +277,22 @@ impl AtomicBool {
     /// Performs a logical "or" operation on the current value and the argument `val`, and sets the
     /// new value to the result.
     ///
-    /// Returns the previous value.
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.or(false, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.or(false);
+    /// assert_eq!(foo.load(), true);
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.or(true, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.or(true);
+    /// assert_eq!(foo.load(), true);
     ///
     /// let foo = AtomicBool::new(false);
-    /// assert_eq!(foo.or(false, Ordering::SeqCst), false);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.or(false);
+    /// assert_eq!(foo.load(), false);
     /// ```
     #[inline]
     pub fn or(&self, val: bool) {
@@ -350,24 +304,22 @@ impl AtomicBool {
     /// Performs a logical "xor" operation on the current value and the argument `val`, and sets
     /// the new value to the result.
     ///
-    /// Returns the previous value.
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicBool, Ordering};
+    /// use msp430_atomic::AtomicBool;
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.xor(false, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), true);
+    /// foo.xor(false);
+    /// assert_eq!(foo.load(), true);
     ///
     /// let foo = AtomicBool::new(true);
-    /// assert_eq!(foo.xor(true, Ordering::SeqCst), true);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.xor(true);
+    /// assert_eq!(foo.load(), false);
     ///
     /// let foo = AtomicBool::new(false);
-    /// assert_eq!(foo.xor(false, Ordering::SeqCst), false);
-    /// assert_eq!(foo.load(Ordering::SeqCst), false);
+    /// foo.xor(false);
+    /// assert_eq!(foo.load(), false);
     /// ```
     #[inline]
     pub fn xor(&self, val: bool) {
@@ -381,7 +333,7 @@ impl<T> AtomicPtr<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::AtomicPtr;
+    /// use msp430_atomic::AtomicPtr;
     ///
     /// let ptr = &mut 5;
     /// let atomic_ptr  = AtomicPtr::new(ptr);
@@ -401,11 +353,11 @@ impl<T> AtomicPtr<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicPtr, Ordering};
+    /// use msp430_atomic::AtomicPtr;
     ///
     /// let mut atomic_ptr = AtomicPtr::new(&mut 10);
     /// *atomic_ptr.get_mut() = &mut 5;
-    /// assert_eq!(unsafe { *atomic_ptr.load(Ordering::SeqCst) }, 5);
+    /// assert_eq!(unsafe { *atomic_ptr.load() }, 5);
     /// ```
     #[inline]
     pub fn get_mut(&mut self) -> &mut *mut T {
@@ -420,7 +372,7 @@ impl<T> AtomicPtr<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::AtomicPtr;
+    /// use msp430_atomic::AtomicPtr;
     ///
     /// let atomic_ptr = AtomicPtr::new(&mut 5);
     /// assert_eq!(unsafe { *atomic_ptr.into_inner() }, 5);
@@ -432,26 +384,15 @@ impl<T> AtomicPtr<T> {
 
     /// Loads a value from the pointer.
     ///
-    /// `load` takes an [`Ordering`] argument which describes the memory ordering
-    /// of this operation.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `order` is [`Release`] or [`AcqRel`].
-    ///
-    /// [`Ordering`]: enum.Ordering.html
-    /// [`Release`]: enum.Ordering.html#variant.Release
-    /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicPtr, Ordering};
+    /// use msp430_atomic::AtomicPtr;
     ///
     /// let ptr = &mut 5;
     /// let some_ptr  = AtomicPtr::new(ptr);
     ///
-    /// let value = some_ptr.load(Ordering::Relaxed);
+    /// let value = some_ptr.load();
     /// ```
     #[inline]
     pub fn load(&self) -> *mut T {
@@ -460,30 +401,18 @@ impl<T> AtomicPtr<T> {
 
     /// Stores a value into the pointer.
     ///
-    /// `store` takes an [`Ordering`] argument which describes the memory ordering
-    /// of this operation.
-    ///
-    /// [`Ordering`]: enum.Ordering.html
-    ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::atomic::{AtomicPtr, Ordering};
+    /// use msp430_atomic::AtomicPtr;
     ///
     /// let ptr = &mut 5;
     /// let some_ptr  = AtomicPtr::new(ptr);
     ///
     /// let other_ptr = &mut 10;
     ///
-    /// some_ptr.store(other_ptr, Ordering::Relaxed);
+    /// some_ptr.store(other_ptr);
     /// ```
-    ///
-    /// # Panics
-    ///
-    /// Panics if `order` is [`Acquire`] or [`AcqRel`].
-    ///
-    /// [`Acquire`]: enum.Ordering.html#variant.Acquire
-    /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
     #[inline]
     pub fn store(&self, ptr: *mut T) {
         unsafe {
@@ -527,7 +456,7 @@ macro_rules! atomic_int {
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::AtomicIsize;
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let atomic_forty_two  = AtomicIsize::new(42);
             /// ```
@@ -544,12 +473,12 @@ macro_rules! atomic_int {
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let mut some_isize = AtomicIsize::new(10);
             /// assert_eq!(*some_isize.get_mut(), 10);
             /// *some_isize.get_mut() = 5;
-            /// assert_eq!(some_isize.load(Ordering::SeqCst), 5);
+            /// assert_eq!(some_isize.load(), 5);
             /// ```
             #[inline]
             pub fn get_mut(&mut self) -> &mut $int_type {
@@ -564,7 +493,7 @@ macro_rules! atomic_int {
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::AtomicIsize;
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let some_isize = AtomicIsize::new(5);
             /// assert_eq!(some_isize.into_inner(), 5);
@@ -576,25 +505,14 @@ macro_rules! atomic_int {
 
             /// Loads a value from the atomic integer.
             ///
-            /// `load` takes an [`Ordering`] argument which describes the memory ordering of this
-            /// operation.
-            ///
-            /// # Panics
-            ///
-            /// Panics if `order` is [`Release`] or [`AcqRel`].
-            ///
-            /// [`Ordering`]: enum.Ordering.html
-            /// [`Release`]: enum.Ordering.html#variant.Release
-            /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
-            ///
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let some_isize = AtomicIsize::new(5);
             ///
-            /// assert_eq!(some_isize.load(Ordering::Relaxed), 5);
+            /// assert_eq!(some_isize.load(), 5);
             /// ```
             #[inline]
             pub fn load(&self) -> $int_type {
@@ -603,28 +521,16 @@ macro_rules! atomic_int {
 
             /// Stores a value into the atomic integer.
             ///
-            /// `store` takes an [`Ordering`] argument which describes the memory ordering of this
-            /// operation.
-            ///
-            /// [`Ordering`]: enum.Ordering.html
-            ///
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let some_isize = AtomicIsize::new(5);
             ///
-            /// some_isize.store(10, Ordering::Relaxed);
-            /// assert_eq!(some_isize.load(Ordering::Relaxed), 10);
+            /// some_isize.store(10);
+            /// assert_eq!(some_isize.load(), 10);
             /// ```
-            ///
-            /// # Panics
-            ///
-            /// Panics if `order` is [`Acquire`] or [`AcqRel`].
-            ///
-            /// [`Acquire`]: enum.Ordering.html#variant.Acquire
-            /// [`AcqRel`]: enum.Ordering.html#variant.AcqRel
             #[inline]
             pub fn store(&self, val: $int_type) {
                 unsafe { $int_type::atomic_store(self.v.get(), val); }
@@ -637,11 +543,11 @@ macro_rules! atomic_int {
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let foo = AtomicIsize::new(0);
-            /// assert_eq!(foo.add(10, Ordering::SeqCst), 0);
-            /// assert_eq!(foo.load(Ordering::SeqCst), 10);
+            /// foo.add(10);
+            /// assert_eq!(foo.load(), 10);
             /// ```
             #[inline]
             pub fn add(&self, val: $int_type) {
@@ -655,11 +561,11 @@ macro_rules! atomic_int {
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let foo = AtomicIsize::new(0);
-            /// assert_eq!(foo.sub(10, Ordering::SeqCst), 0);
-            /// assert_eq!(foo.load(Ordering::SeqCst), -10);
+            /// foo.sub(10);
+            /// assert_eq!(foo.load(), -10);
             /// ```
             #[inline]
             pub fn sub(&self, val: $int_type) {
@@ -671,16 +577,14 @@ macro_rules! atomic_int {
             /// Performs a bitwise "and" operation on the current value and the argument `val`, and
             /// sets the new value to the result.
             ///
-            /// Returns the previous value.
-            ///
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let foo = AtomicIsize::new(0b101101);
-            /// assert_eq!(foo.and(0b110011, Ordering::SeqCst), 0b101101);
-            /// assert_eq!(foo.load(Ordering::SeqCst), 0b100001);
+            /// foo.and(0b110011);
+            /// assert_eq!(foo.load(), 0b100001);
             #[inline]
             pub fn and(&self, val: $int_type) {
                 unsafe { $int_type::atomic_and(self.v.get(), val) }
@@ -691,16 +595,14 @@ macro_rules! atomic_int {
             /// Performs a bitwise "or" operation on the current value and the argument `val`, and
             /// sets the new value to the result.
             ///
-            /// Returns the previous value.
-            ///
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let foo = AtomicIsize::new(0b101101);
-            /// assert_eq!(foo.or(0b110011, Ordering::SeqCst), 0b101101);
-            /// assert_eq!(foo.load(Ordering::SeqCst), 0b111111);
+            /// foo.or(0b110011);
+            /// assert_eq!(foo.load(), 0b111111);
             #[inline]
             pub fn or(&self, val: $int_type) {
                 unsafe { $int_type::atomic_or(self.v.get(), val) }
@@ -711,16 +613,14 @@ macro_rules! atomic_int {
             /// Performs a bitwise "xor" operation on the current value and the argument `val`, and
             /// sets the new value to the result.
             ///
-            /// Returns the previous value.
-            ///
             /// # Examples
             ///
             /// ```
-            /// use std::sync::atomic::{AtomicIsize, Ordering};
+            /// use msp430_atomic::AtomicIsize;
             ///
             /// let foo = AtomicIsize::new(0b101101);
-            /// assert_eq!(foo.xor(0b110011, Ordering::SeqCst), 0b101101);
-            /// assert_eq!(foo.load(Ordering::SeqCst), 0b011110);
+            /// foo.xor(0b110011);
+            /// assert_eq!(foo.load(), 0b011110);
             #[inline]
             pub fn xor(&self, val: $int_type) {
                 unsafe { $int_type::atomic_xor(self.v.get(), val) }
