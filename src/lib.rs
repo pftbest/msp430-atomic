@@ -167,7 +167,7 @@ impl AtomicBool {
     /// ```
     #[inline]
     pub fn into_inner(self) -> bool {
-        unsafe { self.v.into_inner() != 0 }
+        self.v.into_inner() != 0
     }
 
     /// Loads a value from the bool.
@@ -379,7 +379,7 @@ impl<T> AtomicPtr<T> {
     /// ```
     #[inline]
     pub fn into_inner(self) -> *mut T {
-        unsafe { self.p.into_inner() }
+        self.p.into_inner()
     }
 
     /// Loads a value from the pointer.
@@ -500,7 +500,7 @@ macro_rules! atomic_int {
             /// ```
             #[inline]
             pub fn into_inner(self) -> $int_type {
-                unsafe { self.v.into_inner() }
+                 self.v.into_inner()
             }
 
             /// Loads a value from the atomic integer.
@@ -663,7 +663,7 @@ macro_rules! atomic_int {
 
             #[inline]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
-                asm!(concat!("or", $asm_suffix, " $1, $0")
+                asm!(concat!("bis", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
@@ -730,21 +730,30 @@ atomic_int! {
     u16 AtomicU16 ATOMIC_U16_INIT ".w"
 }
 
-atomic_int!{
+atomic_int! {
     isize AtomicIsize ATOMIC_ISIZE_INIT ".w"
 }
 
-atomic_int!{
+atomic_int! {
     usize AtomicUsize ATOMIC_USIZE_INIT ".w"
 }
 
-trait AtomicOperations {
+/// Atomic arithmetic and bitwise operations implemented for numerical types. Each operation is
+/// implemented with a single assembly instruction.
+pub trait AtomicOperations {
+    /// Store value into destination pointee.
     unsafe fn atomic_store(dst: *mut Self, val: Self);
+    /// Read value from destination pointee.
     unsafe fn atomic_load(dst: *const Self) -> Self;
+    /// Add value to destination pointee. Result may wrap around.
     unsafe fn atomic_add(dst: *mut Self, val: Self);
+    /// Subtract value from destination pointee. Result may wrap around.
     unsafe fn atomic_sub(dst: *mut Self, val: Self);
+    /// Clear all bits in destination pointee that are zeroed in value.
     unsafe fn atomic_and(dst: *mut Self, val: Self);
+    /// Set all bits in destination pointee that are set in value.
     unsafe fn atomic_or(dst: *mut Self, val: Self);
+    /// Toggle all bits in destination pointee that are set in value.
     unsafe fn atomic_xor(dst: *mut Self, val: Self);
 }
 
