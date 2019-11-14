@@ -629,13 +629,13 @@ macro_rules! atomic_int {
 
         #[cfg(target_arch = "msp430")]
         impl AtomicOperations for $int_type {
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
                 asm!(concat!("mov", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_load(dst: *const Self) -> Self {
                 let out;
                 asm!(concat!("mov", $asm_suffix, " $1, $0")
@@ -643,31 +643,31 @@ macro_rules! atomic_int {
                 out
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_add(dst: *mut Self, val: Self) {
                 asm!(concat!("add", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_sub(dst: *mut Self, val: Self) {
                 asm!(concat!("sub", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
                 asm!(concat!("and", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
                 asm!(concat!("bis", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
                 asm!(concat!("xor", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
@@ -676,37 +676,37 @@ macro_rules! atomic_int {
 
         #[cfg(not(target_arch = "msp430"))]
         impl AtomicOperations for $int_type {
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_store(dst, val);
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_load(dst: *const Self) -> Self {
                 ::core::intrinsics::atomic_load(dst)
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_add(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_xadd(dst, val);
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_sub(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_xsub(dst, val);
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_and(dst, val);
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_or(dst, val);
             }
 
-            #[inline]
+            #[inline(always)]
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_xor(dst, val);
             }
