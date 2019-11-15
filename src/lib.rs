@@ -662,6 +662,12 @@ macro_rules! atomic_int {
             }
 
             #[inline(always)]
+            unsafe fn atomic_clear(dst: *mut Self, val: Self) {
+                asm!(concat!("bic", $asm_suffix, " $1, $0")
+                    :: "*m"(dst), "ir"(val) : "memory" : "volatile");
+            }
+
+            #[inline(always)]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
                 asm!(concat!("bis", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
@@ -699,6 +705,11 @@ macro_rules! atomic_int {
             #[inline(always)]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
                 ::core::intrinsics::atomic_and(dst, val);
+            }
+
+            #[inline(always)]
+            unsafe fn atomic_clear(dst: *mut Self, val: Self) {
+                ::core::intrinsics::atomic_and(dst, !val);
             }
 
             #[inline(always)]
@@ -751,6 +762,8 @@ pub trait AtomicOperations {
     unsafe fn atomic_sub(dst: *mut Self, val: Self);
     /// Clear all bits in destination pointee that are zeroed in value.
     unsafe fn atomic_and(dst: *mut Self, val: Self);
+    /// Clear all bits in destination pointee that are set in value
+    unsafe fn atomic_clear(dst: *mut Self, val: Self);
     /// Set all bits in destination pointee that are set in value.
     unsafe fn atomic_or(dst: *mut Self, val: Self);
     /// Toggle all bits in destination pointee that are set in value.
