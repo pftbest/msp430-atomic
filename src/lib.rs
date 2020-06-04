@@ -663,7 +663,7 @@ macro_rules! atomic_int {
 
             #[inline(always)]
             unsafe fn atomic_clear(dst: *mut Self, val: Self) {
-                asm!(concat!("bic", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("bic", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
