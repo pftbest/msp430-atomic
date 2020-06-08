@@ -68,7 +68,7 @@
 //! ```
 
 #![no_std]
-#![feature(asm)]
+#![feature(llvm_asm)]
 #![feature(const_fn)]
 #![cfg_attr(not(target_arch = "msp430"), feature(core_intrinsics))]
 
@@ -631,51 +631,51 @@ macro_rules! atomic_int {
         impl AtomicOperations for $int_type {
             #[inline(always)]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
-                asm!(concat!("mov", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("mov", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_load(dst: *const Self) -> Self {
                 let out;
-                asm!(concat!("mov", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("mov", $asm_suffix, " $1, $0")
                     : "=r"(out) : "*m"(dst) : "memory" : "volatile");
                 out
             }
 
             #[inline(always)]
             unsafe fn atomic_add(dst: *mut Self, val: Self) {
-                asm!(concat!("add", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("add", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_sub(dst: *mut Self, val: Self) {
-                asm!(concat!("sub", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("sub", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
-                asm!(concat!("and", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("and", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_clear(dst: *mut Self, val: Self) {
-                asm!(concat!("bic", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("bic", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
-                asm!(concat!("bis", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("bis", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
 
             #[inline(always)]
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
-                asm!(concat!("xor", $asm_suffix, " $1, $0")
+                llvm_asm!(concat!("xor", $asm_suffix, " $1, $0")
                     :: "*m"(dst), "ir"(val) : "memory" : "volatile");
             }
         }
