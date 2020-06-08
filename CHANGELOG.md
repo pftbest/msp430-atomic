@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## v0.1.2 - 2020-06-09
+
+- Use llvm_asm instead of asm
+
 ## v0.1.1 - 2019-12-16
 
 - Expose AtomicOperations trait for public use
@@ -19,4 +23,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/pftbest/msp430-atomic/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/pftbest/msp430-atomic/compare/v0.1.2...HEAD
+[v0.1.2]: https://github.com/pftbest/msp430-atomic/compare/v0.1.1...v0.1.2
