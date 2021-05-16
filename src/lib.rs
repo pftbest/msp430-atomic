@@ -69,7 +69,6 @@
 
 #![no_std]
 #![feature(llvm_asm)]
-#![feature(const_fn)]
 #![cfg_attr(not(target_arch = "msp430"), feature(core_intrinsics))]
 
 use core::cell::UnsafeCell;
