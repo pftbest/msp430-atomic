@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## v0.1.3 - 2021-05-17
+
 - Remove `const_fn` feature gate, as it was removed from `rustc` after `v1.53.0`.
 
 ## v0.1.2 - 2020-06-09
