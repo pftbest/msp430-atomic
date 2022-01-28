@@ -637,7 +637,7 @@ macro_rules! atomic_int {
             #[inline(always)]
             unsafe fn atomic_load(dst: *const Self) -> Self {
                 let out;
-                asm!(concat!("mov", $asm_suffix, " @{0}, {1}"), in(reg) dst, out(reg) out);
+                asm!(concat!("mov", $asm_suffix, " @{0}, {1}"), in(reg) dst, lateout(reg) out);
                 out
             }
 
