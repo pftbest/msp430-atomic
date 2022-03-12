@@ -7,15 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## v0.1.3 - 2021-05-17
+## [v0.1.4] - 2022-01-27
+
+- Use Rust's inline `asm` macro instead of `llvm_asm`; the latter was [removed](https://github.com/rust-lang/rust/pull/92816)
+  from `rustc`.
+
+## [v0.1.3] - 2021-05-17
 
 - Remove `const_fn` feature gate, as it was removed from `rustc` after `v1.53.0`.
 
-## v0.1.2 - 2020-06-09
+## [v0.1.2] - 2020-06-09
 
-- Use llvm_asm instead of asm
+- Use `llvm_asm` instead of `asm`
 
-## v0.1.1 - 2019-12-16
+## [v0.1.1] - 2019-12-16
 
 - Expose AtomicOperations trait for public use
 
@@ -27,5 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[Unreleased]: https://github.com/pftbest/msp430-atomic/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/pftbest/msp430-atomic/compare/v0.1.4...HEAD
+[v0.1.4]: https://github.com/pftbest/msp430-atomic/compare/v0.1.3...v0.1.4
+[v0.1.3]: https://github.com/pftbest/msp430-atomic/compare/v0.1.2...v0.1.3
 [v0.1.2]: https://github.com/pftbest/msp430-atomic/compare/v0.1.1...v0.1.2
+[v0.1.1]: https://github.com/pftbest/msp430-atomic/compare/v0.1.0...v0.1.1
