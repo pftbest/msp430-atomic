@@ -78,6 +78,7 @@ use core::fmt;
 /// A boolean type which can be safely shared between threads.
 ///
 /// This type has the same in-memory representation as a `bool`.
+#[repr(C, align(1))]
 pub struct AtomicBool {
     v: UnsafeCell<u8>,
 }
@@ -95,6 +96,9 @@ unsafe impl Sync for AtomicBool {}
 /// A raw pointer type which can be safely shared between threads.
 ///
 /// This type has the same in-memory representation as a `*mut T`.
+#[cfg_attr(target_pointer_width = "16", repr(C, align(2)))]
+#[cfg_attr(target_pointer_width = "32", repr(C, align(4)))]
+#[cfg_attr(target_pointer_width = "64", repr(C, align(8)))]
 pub struct AtomicPtr<T> {
     p: UnsafeCell<*mut T>,
 }
@@ -422,10 +426,11 @@ impl<T> AtomicPtr<T> {
 }
 
 macro_rules! atomic_int {
-    ($int_type:ident $atomic_type:ident $atomic_init:ident $asm_suffix:expr) => {
+    ($int_type:ident $atomic_type:ident $atomic_init:ident $asm_suffix:literal $align:literal) => {
         /// An integer type which can be safely shared between threads.
         ///
         /// This type has the same in-memory representation as the underlying integer type.
+        #[repr(C, align($align))]
         pub struct $atomic_type {
             v: UnsafeCell<$int_type>,
         }
@@ -718,27 +723,45 @@ macro_rules! atomic_int {
 }
 
 atomic_int! {
-    i8 AtomicI8 ATOMIC_I8_INIT ".b"
+    i8 AtomicI8 ATOMIC_I8_INIT ".b" 1
 }
 
 atomic_int! {
-    u8 AtomicU8 ATOMIC_U8_INIT ".b"
+    u8 AtomicU8 ATOMIC_U8_INIT ".b" 1
 }
 
 atomic_int! {
-    i16 AtomicI16 ATOMIC_I16_INIT ".w"
+    i16 AtomicI16 ATOMIC_I16_INIT ".w" 2
 }
 
 atomic_int! {
-    u16 AtomicU16 ATOMIC_U16_INIT ".w"
+    u16 AtomicU16 ATOMIC_U16_INIT ".w" 2
 }
 
+#[cfg(target_pointer_width = "16")]
 atomic_int! {
-    isize AtomicIsize ATOMIC_ISIZE_INIT ".w"
+    isize AtomicIsize ATOMIC_ISIZE_INIT ".w" 2
+}
+#[cfg(target_pointer_width = "32")]
+atomic_int! {
+    isize AtomicIsize ATOMIC_ISIZE_INIT ".w" 4
+}
+#[cfg(target_pointer_width = "64")]
+atomic_int! {
+    isize AtomicIsize ATOMIC_ISIZE_INIT ".w" 8
 }
 
+#[cfg(target_pointer_width = "16")]
 atomic_int! {
-    usize AtomicUsize ATOMIC_USIZE_INIT ".w"
+    usize AtomicUsize ATOMIC_USIZE_INIT ".w" 2
+}
+#[cfg(target_pointer_width = "32")]
+atomic_int! {
+    usize AtomicUsize ATOMIC_USIZE_INIT ".w" 4
+}
+#[cfg(target_pointer_width = "64")]
+atomic_int! {
+    usize AtomicUsize ATOMIC_USIZE_INIT ".w" 8
 }
 
 /// Atomic arithmetic and bitwise operations implemented for numerical types. Each operation is
