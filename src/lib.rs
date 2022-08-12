@@ -68,9 +68,9 @@
 //! ```
 
 #![no_std]
-#![feature(asm_experimental_arch)]
-#![cfg_attr(not(target_arch = "msp430"), feature(core_intrinsics))]
+#![cfg_attr(target_arch = "msp430", feature(asm_experimental_arch))]
 
+#[cfg(target_arch = "msp430")]
 use core::arch::asm;
 use core::cell::UnsafeCell;
 use core::fmt;
@@ -681,42 +681,50 @@ macro_rules! atomic_int {
         impl AtomicOperations for $int_type {
             #[inline(always)]
             unsafe fn atomic_store(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_store(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .store(val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_load(dst: *const Self) -> Self {
-                ::core::intrinsics::atomic_load(dst)
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .load(::core::sync::atomic::Ordering::SeqCst)
             }
 
             #[inline(always)]
             unsafe fn atomic_add(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_xadd(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_add(val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_sub(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_xsub(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_sub(val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_and(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_and(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_and(val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_clear(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_and(dst, !val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_and(!val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_or(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_or(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_or(val, ::core::sync::atomic::Ordering::SeqCst);
             }
 
             #[inline(always)]
             unsafe fn atomic_xor(dst: *mut Self, val: Self) {
-                ::core::intrinsics::atomic_xor(dst, val);
+                (*(dst as *const ::core::sync::atomic::$atomic_type))
+                    .fetch_xor(val, ::core::sync::atomic::Ordering::SeqCst);
             }
         }
     }
