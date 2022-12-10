@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [v0.1.5] - 2022-11-06
+## [v0.1.5] - 2022-12-10
 
 _As of `v0.1.5`, this crate is deprecated in favor of [`portable-atomic`](https://github.com/taiki-e/portable-atomic)
 `v0.3.16` or later_. Only bugfix/patch releases will be made going forward.
